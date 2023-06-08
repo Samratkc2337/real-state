@@ -1,0 +1,41 @@
+from flask import Flask, request, jsonify, render_template
+import util
+import pandas as pd
+
+app = Flask(__name__, template_folder='templates', static_folder='static')
+
+@app.route('/', methods=['GET'])
+def home():
+    df = pd.read_csv("model/bengaluru_house_prices.csv")
+    locations = df["location"].unique()
+    return render_template('app.html', data = locations)
+
+@app.route('/get_location_names', methods=['GET'])
+def get_location_names():
+    response = jsonify({
+        'locations': util.get_location_names()
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response
+
+
+@app.route('/api/predict_home_price', methods=['GET', 'POST'])
+def predict_home_price():
+    total_sqft = float(request.form['total_sqft'])
+    location = request.form['location']
+    bhk = int(request.form['bhk'])
+    bath = int(request.form['bath'])
+
+
+    response = jsonify({
+        'estimated_price': util.get_estimated_price(location,total_sqft,bhk,bath)
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response
+
+if __name__ == "__main__":
+    print("Starting Python Flask Server For Home Price Prediction...")
+    util.load_saved_artifacts()
+    app.run(host='0.0.0.0', port=5001, debug=True)
